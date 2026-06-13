@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+
+# Environment variables — NUNCA subir al repo
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Turbo
+.turbo/
+
+# Testing
+coverage/
+
+# Misc
+.DS_Store
+*.pem
+*.log
+npm-debug.log*
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+#docs
+*.docx
+*.pdf
+*.pptx
+
+
+#custom
+CONTEXTO_PROYECTO.md
