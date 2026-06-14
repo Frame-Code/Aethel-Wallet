@@ -1,11 +1,11 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get } from '@nestjs/common';
 
 @Controller('auth')
 export class AuthController {
-    constructor(){}
+  constructor() {}
 
-    @Get()
-    getUsers() {
-        return 'Test'
-    }   
+  @Get()
+  getUsers() {
+    return 'Test';
+  }
 }
