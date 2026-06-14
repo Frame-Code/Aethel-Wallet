@@ -2,14 +2,13 @@
   "name": "wallet-aethel",
   "version": "0.0.1",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "dev": "concurrently -k -n API,WEB -c blue,green \"npm run dev --workspace=apps/api\" \"npm run dev --workspace=apps/web\"",
     "build": "turbo run build",
     "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,css,md}\"",
     "test": "turbo run test",
     "type-check": "turbo run type-check"
   },
@@ -19,11 +18,13 @@
     "typescript": "^5.4.0",
     "next": "^15.0.0",
     "@nestjs/cli": "^11.0.0",
-    "@nestjs/schematics": "^11.0.0"
+    "@nestjs/schematics": "^11.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.3.3"
   },
   "packageManager": "npm@10.0.0",
-  "engines": {
-    "node": ">=20.0.0",
-    "npm": ">=10.0.0"
-  }
+  "engines": { "node": ">=20.0.0", "npm": ">=10.0.0" }
 }

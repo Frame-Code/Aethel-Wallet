@@ -1,13 +1,12 @@
-import { Module, Global } from '@nestjs/common'
-import { ConfigModule, ConfigService } from '@nestjs/config'
-import { initializeApp, getApps, cert, App } from 'firebase-admin/app'
-import { getAuth } from 'firebase-admin/auth'
-import { getFirestore } from 'firebase-admin/firestore'
+import { Module, Global } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 
-export const FIREBASE_APP = 'FIREBASE_APP'
-export const FIREBASE_AUTH = 'FIREBASE_AUTH'
-export const FIREBASE_DB = 'FIREBASE_DB'
-
+export const FIREBASE_APP = 'FIREBASE_APP';
+export const FIREBASE_AUTH = 'FIREBASE_AUTH';
+export const FIREBASE_DB = 'FIREBASE_DB';
 
 @Global()
 @Module({
@@ -17,19 +16,14 @@ export const FIREBASE_DB = 'FIREBASE_DB'
       provide: FIREBASE_APP,
       inject: [ConfigService],
       useFactory: (config: ConfigService): App => {
-        if (getApps().length > 0) 
-          return getApps()[0]
+        if (getApps().length > 0) return getApps()[0];
         return initializeApp({
-          credential: cert(
-            {
+          credential: cert({
             projectId: config.get<string>('FIREBASE_PROJECT_ID'),
             clientEmail: config.get<string>('FIREBASE_CLIENT_EMAIL'),
-            privateKey: config
-              .get<string>('FIREBASE_PRIVATE_KEY')
-              ?.replace(/\\n/g, '\n'),
-            }
-          ),
-        })
+            privateKey: config.get<string>('FIREBASE_PRIVATE_KEY')?.replace(/\\n/g, '\n'),
+          }),
+        });
       },
     },
     {
