@@ -1,10 +1,29 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { Logger } from '@nestjs/common';
+import { Logger, MethodNotAllowedException } from '@nestjs/common';
 import { AppModule } from './app.module';
+import helmet from 'helmet';
 
+//Punto de inicio de la API
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const enableContentSecurity = process.env['NODE_ENV'] == 'development'? false : true;
+
+  //Helmet agrega varios header de seguridad a las responses http
+  app.use(helmet({
+    contentSecurityPolicy: enableContentSecurity,
+     hsts: { //Configura Strict-transport-security -> que automaticamente sse utilize https
+      maxAge: 31_536_000, // 1 año en segundos
+      includeSubDomains: true,
+    },
+  }));
+
+  app.enableCors({
+    origin: process.env['CORS_ORIGIN'] ?? 'http://localhost:3000',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    credentials: true,
+  })
+
   app.setGlobalPrefix('v1');
   const port = process.env['PORT'] ?? 3001;
   await app.listen(port);
