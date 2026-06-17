@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { FirebaseModule } from '../../firebase/firebase.module';
 
 import { AuthService } from './auth.service';
@@ -13,9 +12,13 @@ import { JwtStrategy } from './jwt.strategy';
     PassportModule,
     FirebaseModule,
     JwtModule.register({
-  secret: process.env.JWT_SECRET ?? 'fallback_secret',
+      secret: (() => {
+        const secret = process.env.JWT_SECRET;
+        if (!secret) throw new Error('JWT_SECRET no está definido en las variables de entorno');
+        return secret;
+  })(),
   signOptions: {
-    expiresIn:'3600s',
+    expiresIn: 3600,
   },
 }),
   ],
