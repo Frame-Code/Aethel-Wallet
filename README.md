@@ -1,4 +1,4 @@
-# Wallet Aethel
+# NexS Wallet
 
 Wallet no-custodial multichain para Solana, Bitcoin y BNB Chain. Proyecto de tesis académica — Bases de Datos Avanzado, Universidad de Guayaquil.
 
@@ -16,7 +16,7 @@ Wallet no-custodial multichain para Solana, Bitcoin y BNB Chain. Proyecto de tes
 ## Estructura
 
 ```
-wallet-aethel/
+nexs-wallet/
 ├── apps/
 │   ├── web/               # PWA Next.js — puerto 3000
 │   └── api/               # REST API NestJS — puerto 3001
