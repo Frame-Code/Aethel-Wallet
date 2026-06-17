@@ -1,5 +1,5 @@
 // ============================================================
-// Wallet Aethel — Configuracion ESLint compartida (monorepo)
+// NexS Wallet — Configuracion ESLint compartida (monorepo)
 // Aplica a: apps/web, apps/api, packages/shared-types
 // ============================================================
 

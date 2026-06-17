@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Wallet Aethel',
+  title: 'NexS Wallet',
   description: 'Non-custodial multichain wallet',
 };
 
