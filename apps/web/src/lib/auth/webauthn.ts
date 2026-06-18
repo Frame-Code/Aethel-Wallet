@@ -1,6 +1,5 @@
 import { GenericResponse } from "@nexs-wallet/shared-types";
 import { base64ToBuffer, bufferToBase64, isBiometricAvailable } from "./webauthn.utils";
-import { getRandomValues } from "crypto";
 
 export interface BiometricRegistration {
     credentialId: string,
@@ -17,46 +16,67 @@ export async function registerBiometric(userId: string, userEmail: string): Prom
         };
     }
 
-    const credential = (
-        await navigator.credentials.create({
-            publicKey: {
-                challenge: getRandomValues(new Uint32Array(32)),
-                //rp define quien solicita la credencial
-                rp: {
-                    name: 'nexs wallet',
-                    id: window.location.hostname
-                },
-                user: {
-                    id: new TextEncoder().encode(userId),
-                    name: userEmail,
-                    displayName: 'nexs wallet'
-                },
-
-                pubKeyCredParams: [
-                    {
-                        type: 'public-key', 
-                        alg: -7
+    let credential: PublicKeyCredential;
+    try {
+        credential = (
+            await navigator.credentials.create({
+                publicKey: {
+                    // C1: usar Web Crypto API (window.crypto) en lugar de modulo Node "crypto"
+                    challenge: window.crypto.getRandomValues(new Uint8Array(32)),
+                    //rp define quien solicita la credencial
+                    rp: {
+                        name: 'nexs wallet',
+                        id: window.location.hostname
                     },
-                    {
-                        type: 'public-key',
-                        alg: -257
-                    }
-                ],
-                authenticatorSelection: {
-                    authenticatorAttachment: 'platform', //solo biometria nativa del dispositivo
-                    userVerification: 'required',
-                    residentKey: 'preferred'
-                },
-                timeout: 60_000
-            }
-        })
-    ) as PublicKeyCredential;
-    
+                    user: {
+                        id: new TextEncoder().encode(userId),
+                        name: userEmail,
+                        displayName: 'nexs wallet'
+                    },
+
+                    pubKeyCredParams: [
+                        {
+                            type: 'public-key',
+                            alg: -7
+                        },
+                        {
+                            type: 'public-key',
+                            alg: -257
+                        }
+                    ],
+                    authenticatorSelection: {
+                        authenticatorAttachment: 'platform', //solo biometria nativa del dispositivo
+                        userVerification: 'required',
+                        residentKey: 'preferred'
+                    },
+                    timeout: 60_000
+                }
+            })
+        ) as PublicKeyCredential;
+    } catch (err) {
+        if (err instanceof DOMException && err.name === 'NotAllowedError') {
+            return {
+                success: false,
+                message: 'Registro biometrico cancelado por el usuario'
+            };
+        }
+        throw err;
+    }
+
     const response = credential.response as AuthenticatorAttestationResponse;
 
-    //Encode a base 64
+    //Validar si la el autenticador retorna una llave publica
+    const rawPublicKey = response.getPublicKey();
+    if (!rawPublicKey) {
+        return {
+            success: false,
+            message: 'El autenticador no retorno la clave publica — registro fallido'
+        };
+    }
+
+    
     const credentialId = bufferToBase64(credential.rawId);
-    const publicKey = bufferToBase64(response.getPublicKey() ?? new ArrayBuffer(0));
+    const publicKey = bufferToBase64(rawPublicKey);
 
     localStorage.setItem('biometric_cred_id', credentialId);
     localStorage.setItem('biometric_pub_key', publicKey);
