@@ -4,12 +4,12 @@ import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe, MethodNotAllowedException } from '@nestjs/common';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
+import * as express from 'express'
 
 //Punto de inicio de la API
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
-
-  const enableContentSecurity = process.env['NODE_ENV'] == 'development' ? false : true;
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
+  const enableContentSecurity = process.env['NODE_ENV'] == 'development'? false : true;
 
   //Helmet agrega varios header de seguridad a las responses http
   app.use(helmet({
@@ -36,6 +36,9 @@ async function bootstrap() {
     credentials: true,
   });
 
+  //El body de las request de los webhooks seran Buffer raw
+  app.use('/v1/webhooks', express.raw({ type: 'application/json' }));
+  app.setGlobalPrefix('v1');
   const port = process.env['PORT'] ?? 3001;
   await app.listen(port);
   Logger.log(`API corriendo en http://localhost:${port}/v1`, 'Bootstrap');
