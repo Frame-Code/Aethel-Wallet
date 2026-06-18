@@ -4,6 +4,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { FirebaseModule } from './firebase/firebase.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { WebhookMiddleware } from './common/middlewares/webhook.middleware';
+import { TransactionsModule } from './modules/transactions/transactions.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { WebhookMiddleware } from './common/middlewares/webhook.middleware';
     FirebaseModule,
     AuthModule,
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 30 }]),
+    TransactionsModule,
   ],
 })
 export class AppModule implements NestModule{
