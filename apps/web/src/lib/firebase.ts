@@ -12,13 +12,11 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Evita reinicializar la app en hot reload (Next.js dev mode)
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// Messaging solo disponible en browser con soporte
 export const getMessagingClient = async () => {
   const supported = await isSupported();
   return supported ? getMessaging(app) : null;
