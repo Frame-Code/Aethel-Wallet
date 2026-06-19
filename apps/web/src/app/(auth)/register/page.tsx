@@ -17,7 +17,7 @@ export default function RegisterPage() {
 
     try {
       // Aquí irá la lógica de registro con Firebase
-      console.log('Register con:', username, email, password);
+      // TODO: lógica de registro con Firebase - a cargo de Russell
     } catch {
       setError('Error al crear la cuenta');
     } finally {
