@@ -56,7 +56,7 @@ export default function Sidebar() {
     const pathname = usePathname();
 
     return (
-        <aside className="fixed left-0 top-0 h-screen w-60 border-r border-surface-border flex flex-col z-40" style={{ backgroundColor: '#101829' }}>
+        <aside className="fixed left-0 top-0 h-screen w-60 border-r border-surface-border flex flex-col z-40 bg-slate-900" >
             {/* Logo */}
             <div className="px-4 pt-8 pb-4 border-b border-surface-border flex flex-col items-center">
                 <img src="/logo.svg" alt="NexS Wallet" className="w-24 h-24 object-contain" />
