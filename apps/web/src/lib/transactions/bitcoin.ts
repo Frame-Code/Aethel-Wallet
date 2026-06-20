@@ -41,7 +41,6 @@ export async function buildAndSignBTC(
     value: amountSatoshi,
   });
 
-  // Calcular el cambio y enviarlo de vuelta a nuestra propia dirección
   const fee = 1000; // Tarifa de minería plana para el ejemplo (en satoshis)
   const change = inputSum - amountSatoshi - fee;
   

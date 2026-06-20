@@ -1,4 +1,12 @@
+import { IsString, IsNotEmpty, IsIn } from 'class-validator';
+
 export class BroadcastDto {
-  chain: 'solana' | 'bnb' | 'bitcoin';
+  @IsNotEmpty()
+  @IsString()
+  @IsIn(['solana', 'bnb', 'bitcoin'])
+  chain: string;
+
+  @IsNotEmpty()
+  @IsString()
   rawTx: string;
 }
