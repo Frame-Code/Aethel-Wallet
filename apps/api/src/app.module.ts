@@ -4,6 +4,8 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { FirebaseModule } from './firebase/firebase.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { PricesModule } from './modules/prices/prices.module';
+import { BalancesModule } from './modules/balances/balances.module';
 import { WebhookMiddleware } from './common/middlewares/webhook.middleware';
 
 @Module({
@@ -11,6 +13,8 @@ import { WebhookMiddleware } from './common/middlewares/webhook.middleware';
     ConfigModule.forRoot({ isGlobal: true }),
     FirebaseModule,
     AuthModule,
+    PricesModule,
+    BalancesModule,
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 30 }]),
   ],
   providers: [
