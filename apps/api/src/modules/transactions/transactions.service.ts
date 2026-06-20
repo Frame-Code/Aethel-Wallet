@@ -25,24 +25,75 @@ class SolanaStrategy implements IChainStrategy {
 
 class BnbStrategy implements IChainStrategy {
   async broadcast(rawTx: string): Promise<string> {
-    const provider = new ethers.JsonRpcProvider(process.env.QUICKNODE_BNB_URL);
+    // Implementación usando tu variable ALCHEMY_BNB_URL
+    const provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_BNB_URL);
     const tx = await provider.broadcastTransaction(rawTx);
     return tx.hash;
   }
 
   async getHistory(address: string) {
-    // Aquí iría la llamada a la API de BscScan en el futuro
-    return { address, chain: 'bnb', transactions: [] };
+    // BscScan permite consultas sin API Key con límite (1 req/sec)
+    const apiKey = process.env.BSCSCAN_API_KEY || ''; 
+    const url = `https://api.bscscan.com/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=20&sort=desc&apikey=${apiKey}`;
+    
+    try {
+      const response = await fetch(url);
+      const data: any = await response.json();
+      
+      return { 
+        address, 
+        chain: 'bnb', 
+        transactions: data.status === '1' ? data.result : [] 
+      };
+    } catch (error: any) {
+      throw new Error(`Error al obtener historial de BNB: ${error.message}`);
+    }
   }
 }
 
 class BitcoinStrategy implements IChainStrategy {
   async broadcast(rawTx: string): Promise<string> {
-    return 'btc_tx_hash_simulado'; 
+    try {
+      // Implementación usando tu variable ALCHEMY_BTC_URL
+      const response = await fetch(process.env.ALCHEMY_BTC_URL!, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '1.0',
+          id: 'wallet_broadcast',
+          method: 'sendrawtransaction',
+          params: [rawTx]
+        })
+      });
+      
+      const data: any = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error.message);
+      }
+      return data.result; 
+    } catch (error: any) {
+      throw new Error(`Error en broadcast de Bitcoin: ${error.message}`);
+    }
   }
 
   async getHistory(address: string) {
-    return { address, chain: 'bitcoin', transactions: [] };
+    const url = `https://mempool.space/api/address/${address}/txs`;
+    
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Network response was not ok');
+      
+      const transactions = await response.json();
+      
+      return { 
+        address, 
+        chain: 'bitcoin', 
+        transactions: transactions 
+      };
+    } catch (error: any) {
+      throw new Error(`Error al obtener historial de Bitcoin: ${error.message}`);
+    }
   }
 }
 
