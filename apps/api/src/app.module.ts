@@ -3,8 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { FirebaseModule } from './firebase/firebase.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { WebhookMiddleware } from './common/middlewares/webhook.middleware';
 import { UsersModule } from './modules/users/users.module';
+import { WebhookMiddleware } from './common/middlewares/webhook.middleware';
 
 @Module({
   imports: [
