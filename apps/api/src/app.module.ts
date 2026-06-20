@@ -4,12 +4,14 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { FirebaseModule } from './firebase/firebase.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { WebhookMiddleware } from './common/middlewares/webhook.middleware';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     FirebaseModule,
     AuthModule,
+    UsersModule, 
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 30 }]),
   ],
 })
