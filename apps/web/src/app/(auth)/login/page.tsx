@@ -6,6 +6,7 @@ import Link from 'next/link';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -26,7 +27,6 @@ export default function LoginPage() {
   const handleGoogle = async () => {
     try {
       // Aquí irá la lógica de login con Google
-      
     } catch {
       setError('Error al iniciar sesión con Google');
     }
@@ -67,9 +67,27 @@ export default function LoginPage() {
           />
         </div>
 
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">PIN de seguridad (6 dígitos)</label>
+          <input
+            type="password"
+            value={pin}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '');
+              if (val.length <= 6) setPin(val);
+            }}
+            placeholder="••••••"
+            inputMode="numeric"
+            maxLength={6}
+            required
+            className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 tracking-widest"
+          />
+          <p className="text-xs text-gray-500 mt-1">Solo números, exactamente 6 dígitos</p>
+        </div>
+
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || pin.length !== 6}
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-lg py-3 text-sm transition-colors"
         >
           {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}

@@ -7,6 +7,8 @@ export default function RegisterPage() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -15,8 +17,13 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
 
+    if (pin !== confirmPin) {
+      setError('Los PINs no coinciden');
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Aquí irá la lógica de registro con Firebase
       // TODO: lógica de registro con Firebase - a cargo de Russell
     } catch {
       setError('Error al crear la cuenta');
@@ -73,9 +80,51 @@ export default function RegisterPage() {
           />
         </div>
 
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">PIN de seguridad (6 dígitos)</label>
+          <input
+            type="password"
+            value={pin}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '');
+              if (val.length <= 6) setPin(val);
+            }}
+            placeholder="••••••"
+            inputMode="numeric"
+            maxLength={6}
+            required
+            className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 tracking-widest"
+          />
+          <p className="text-xs text-gray-500 mt-1">Solo números, exactamente 6 dígitos</p>
+        </div>
+
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">Confirmar PIN</label>
+          <input
+            type="password"
+            value={confirmPin}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '');
+              if (val.length <= 6) setConfirmPin(val);
+            }}
+            placeholder="••••••"
+            inputMode="numeric"
+            maxLength={6}
+            required
+            className={`w-full bg-gray-800 border text-white rounded-lg px-4 py-3 text-sm focus:outline-none tracking-widest ${
+              confirmPin.length === 6 && confirmPin !== pin
+                ? 'border-red-500 focus:border-red-500'
+                : 'border-gray-700 focus:border-blue-500'
+            }`}
+          />
+          {confirmPin.length === 6 && confirmPin !== pin && (
+            <p className="text-xs text-red-400 mt-1">Los PINs no coinciden</p>
+          )}
+        </div>
+
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || pin.length !== 6 || confirmPin !== pin}
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-lg py-3 text-sm transition-colors"
         >
           {loading ? 'Creando cuenta...' : 'Crear cuenta'}
