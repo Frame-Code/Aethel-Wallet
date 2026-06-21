@@ -14,6 +14,7 @@ export interface AuthSuccessResult {
   uid: string;
   email: string;
   displayName: string;
+  needsVaultSetup?: boolean;
   biometricMessage?: string;
 }
 
@@ -63,25 +64,19 @@ export async function signInWithFirebaseEmail(
       localStorage.setItem('refresh_token', refresh_token);
     }
 
-    // Guardar PIN en sessionStorage
+    // Guardar PIN en la sessionStorage
     sessionStorage.setItem('user_pin', pin);
 
-    // 3. Validar / Inicializar el vault local
     const vaultExists = await hasVault();
-    let biometricMessage = undefined;
-    if (vaultExists) {
-      // Intentar descifrar el mnemonic existente con el PIN
-      await loadMnemonic(pin);
-    } else {
-      // Si es un nuevo dispositivo, generar un nuevo mnemonic y asociarlo al PIN
-      const mnemonic = generateMnemonic();
-      await storeMnemonic(mnemonic, pin);
 
-      // Intentar registrar biometría al ser nuevo dispositivo
-      const bioResponse = await registerBiometric(uid, email);
-      if (!bioResponse.success) {
-        biometricMessage = 'no se pudo obtener biométrico';
-      }
+    if (vaultExists) {
+      await loadMnemonic(pin);
+      return {
+        success: true,
+        uid,
+        email: user.email || email,
+        displayName: user.displayName || '',
+      };
     }
 
     return {
@@ -89,7 +84,7 @@ export async function signInWithFirebaseEmail(
       uid,
       email: user.email || email,
       displayName: user.displayName || '',
-      biometricMessage
+      needsVaultSetup: true,
     };
   } catch (err: any) {
     if (err.message && err.message.includes('PIN incorrecto')) {
@@ -148,24 +143,17 @@ export async function signInWithFirebaseGoogle(
       localStorage.setItem('refresh_token', refresh_token);
     }
 
-    // Guardar PIN en sessionStorage
+    // Guardar PIN en la sessionStorage
     sessionStorage.setItem('user_pin', pin);
 
-    // 3. Manejar el vault y biometría
-    let biometricMessage = undefined;
-    if (!vaultExists) {
-      // Registrar una nueva wallet local
-      const mnemonic = generateMnemonic();
-      await storeMnemonic(mnemonic, pin);
-
-      // Registrar biometría
-      const bioResponse = await registerBiometric(uid, user.email);
-      if (!bioResponse.success) {
-        biometricMessage = 'no se pudo obtener biométrico';
-      }
-    } else {
-      // Desbloquear wallet existente con el PIN
+    if (vaultExists) {
       await loadMnemonic(pin);
+      return {
+        success: true,
+        uid,
+        email: user.email,
+        displayName: user.displayName || '',
+      };
     }
 
     return {
@@ -173,7 +161,7 @@ export async function signInWithFirebaseGoogle(
       uid,
       email: user.email,
       displayName: user.displayName || '',
-      biometricMessage
+      needsVaultSetup: true,
     };
   } catch (err: any) {
     if (err.message && err.message.includes('PIN incorrecto')) {
@@ -185,7 +173,7 @@ export async function signInWithFirebaseGoogle(
 
 /**
  * Registra una cuenta nueva con Email, Contraseña y PIN.
- * Genera el mnemonic local, lo encripta e intenta registrar la biometría.
+ * Genera el mnemonic local, lo encripta e intenta registrar la biometria.
  */
 export async function registerWithFirebaseEmail(
   username: string,

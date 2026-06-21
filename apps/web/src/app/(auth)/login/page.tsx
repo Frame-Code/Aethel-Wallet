@@ -10,6 +10,7 @@ import { generateMnemonic } from '@/lib/crypto/keygen';
 import { registerBiometric, verifyBiometric } from '@/lib/auth/webauthn';
 import { isBiometricAvailable } from '@/lib/auth/webauthn.utils';
 
+
 interface GoogleAuthData {
   idToken: string;
   email: string;
@@ -44,12 +45,35 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const verified = await verifyBiometric();
-      if (verified) {
-        sessionStorage.setItem('biometric_auth', 'true');
-        router.push('/dashboard');
-      } else {
+      if (!verified) {
         setError('Autenticación biométrica fallida o cancelada');
+        return;
       }
+
+      const refreshToken = localStorage.getItem('refresh_token');
+      if (!refreshToken) {
+        setLoginMode('standard');
+        setError('Sesión expirada. Inicia sesión con tu correo o Google.');
+        return;
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/v1';
+      const res = await fetch(`${apiUrl}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+
+      if (!res.ok) {
+        setLoginMode('standard');
+        setError('Sesión expirada. Inicia sesión con tu correo o Google.');
+        return;
+      }
+
+      const { access_token } = await res.json();
+      localStorage.setItem('access_token', access_token);
+      sessionStorage.setItem('biometric_auth', 'true');
+      router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Error al verificar la biometría');
     } finally {
@@ -100,18 +124,7 @@ export default function LoginPage() {
         await loadMnemonic(pin);
         router.push('/dashboard');
       } else {
-        const mnemonic = generateMnemonic();
-        await storeMnemonic(mnemonic, pin);
-
-        const bioResponse = await registerBiometric(uid, email);
-        if (!bioResponse.success) {
-          setError('no se pudo obtener biométrico');
-          setTimeout(() => {
-            router.push('/dashboard');
-          }, 2000);
-          return;
-        }
-        router.push('/dashboard');
+        router.push('/onboarding');
       }
     } catch (err: any) {
       if (err.message && err.message.includes('PIN incorrecto')) {
@@ -140,14 +153,13 @@ export default function LoginPage() {
       const idToken = await user.getIdToken();
       const vaultExists = await hasVault();
 
-      if (vaultExists) {
-        const bioAvailable = await isBiometricAvailable();
-        const hasCredId = !!localStorage.getItem('biometric_cred_id');
-        if (bioAvailable && hasCredId) {
-          const verified = await verifyBiometric();
-          if (!verified) {
-            throw new Error('Autenticación biométrica requerida para continuar');
-          }
+      const bioAvailable = await isBiometricAvailable();
+      const hasCredId = !!localStorage.getItem('biometric_cred_id');
+
+      if (bioAvailable && hasCredId) {
+        const verified = await verifyBiometric();
+        if (!verified) {
+          throw new Error('Autenticación biométrica requerida para continuar');
         }
       }
 
@@ -222,8 +234,13 @@ export default function LoginPage() {
         }
         router.push('/dashboard');
       } else {
-        await loadMnemonic(pin);
-        router.push('/dashboard');
+        const vaultExists = await hasVault();
+        if (vaultExists) {
+          await loadMnemonic(pin);
+          router.push('/dashboard');
+        } else {
+          router.push('/onboarding');
+        }
       }
     } catch (err: any) {
       if (err.message && err.message.includes('PIN incorrecto')) {
