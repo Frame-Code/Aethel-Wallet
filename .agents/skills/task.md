@@ -1,6 +1,0 @@
-- [x] Quitar el requisito de PIN antes de continuar con Google en `login/page.tsx`.
-- [x] Implementar el flujo de "Continuar con Google" donde el PIN se solicita en el paso inmediatamente posterior a la autenticación de Google.
-- [x] Implementar el modo de login por biometría (`loginMode === 'biometric'`) para usuarios recurrentes (que ya tengan sesión y biometría en el dispositivo), solicitando únicamente su huella/biometría nativa.
-- [x] Adaptar `(wallet)/layout.tsx` para admitir el acceso mediante biometría (`biometric_auth` en `sessionStorage`) si el PIN de sesión no está cargado.
-- [x] Limpiar `biometric_auth` en la lógica de cierre de sesión de `Sidebar.tsx`.
-- [x] Eliminar todos los comentarios explicativos que agregamos en las secciones de código modificadas en esta sesión (dejando intacto el código de tu compañero y los comentarios previos).
