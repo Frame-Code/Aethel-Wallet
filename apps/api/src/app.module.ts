@@ -5,6 +5,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { FirebaseModule } from './firebase/firebase.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { WalletModule } from './modules/wallet/wallet.module';
 import { WebhookMiddleware } from './common/middlewares/webhook.middleware';
 
 @Module({
@@ -13,6 +14,7 @@ import { WebhookMiddleware } from './common/middlewares/webhook.middleware';
     FirebaseModule,
     AuthModule,
     UsersModule, 
+    WalletModule,
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 30 }]),
   ],
   providers: [
