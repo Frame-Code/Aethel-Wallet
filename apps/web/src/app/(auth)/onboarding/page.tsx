@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import * as bip39 from 'bip39';
 
 type Step = 'welcome' | 'create' | 'confirm' | 'import';
 
@@ -34,6 +35,13 @@ export default function OnboardingPage() {
         if (!allFilled) {
             setError('Debes ingresar las 12 palabras');
             return;
+        }
+
+        //Valida que las 12 palabras sean palabras derivadas del estandar BIP-39
+        const mnemonic = importWords.join(' ');
+        if (!bip39.validateMnemonic(mnemonic)) {
+          setError('Frase semilla inválida. Verifica que todas las palabras sean correctas.');
+          return;
         }
         // TODO: importar wallet con Russell usando importWords.join(' ')
         router.push('/dashboard');
