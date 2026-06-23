@@ -27,14 +27,15 @@ export default function OnboardingPage() {
         router.push('/dashboard');
     };
 
-    const handleImport = (e: React.FormEvent) => {
-        e.preventDefault();
-        const words = importPhrase.trim().split(/\s+/);
-        if (words.length !== 12) {
-            setError('La frase semilla debe tener exactamente 12 palabras');
+    const [importWords, setImportWords] = useState<string[]>(Array(12).fill(''));
+
+    const handleImport = () => {
+        const allFilled = importWords.every(w => w.trim() !== '');
+        if (!allFilled) {
+            setError('Debes ingresar las 12 palabras');
             return;
         }
-        // TODO: importar wallet con Russell
+        // TODO: importar wallet con Russell usando importWords.join(' ')
         router.push('/dashboard');
     };
 
@@ -131,43 +132,49 @@ export default function OnboardingPage() {
                 <div className="space-y-6">
                     <div>
                         <h2 className="text-xl font-semibold text-white">Importar wallet</h2>
-                        <p className="text-gray-400 text-sm mt-1">Ingresa tus 12 palabras separadas por espacios.</p>
+                        <p className="text-gray-400 text-sm mt-1">Ingresa tus 12 palabras en orden.</p>
                     </div>
 
-                    <form onSubmit={handleImport} className="space-y-4">
-                        <textarea
-                            value={importPhrase}
-                            onChange={(e) => {
-                                setImportPhrase(e.target.value);
-                                setError('');
-                            }}
-                            placeholder="palabra1 palabra2 palabra3 ..."
-                            rows={4}
-                            className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 resize-none"
-                        />
-
-                        {error && (
-                            <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-lg px-4 py-3">
-                                {error}
+                    <div className="bg-gray-800 rounded-xl p-4 grid grid-cols-3 gap-2">
+                        {Array.from({ length: 12 }, (_, i) => (
+                            <div key={i} className="flex items-center gap-2 bg-gray-700 rounded-lg px-2 py-2">
+                                <span className="text-gray-500 text-xs w-4 shrink-0">{i + 1}.</span>
+                                <input
+                                    type="text"
+                                    value={importWords[i]}
+                                    onChange={(e) => {
+                                        const updated = [...importWords];
+                                        updated[i] = e.target.value.toLowerCase().trim();
+                                        setImportWords(updated);
+                                        setError('');
+                                    }}
+                                    className="bg-transparent text-white text-sm focus:outline-none w-full"
+                                    placeholder="palabra"
+                                />
                             </div>
-                        )}
+                        ))}
+                    </div>
 
-                        <div className="flex gap-3">
-                            <button
-                                type="button"
-                                onClick={() => { setStep('welcome'); setError(''); }}
-                                className="flex-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white font-medium rounded-lg py-3 text-sm transition-colors"
-                            >
-                                Volver
-                            </button>
-                            <button
-                                type="submit"
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg py-3 text-sm transition-colors"
-                            >
-                                Importar
-                            </button>
+                    {error && (
+                        <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-lg px-4 py-3">
+                            {error}
                         </div>
-                    </form>
+                    )}
+
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => { setStep('welcome'); setError(''); setImportWords(Array(12).fill('')); }}
+                            className="flex-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white font-medium rounded-lg py-3 text-sm transition-colors"
+                        >
+                            Volver
+                        </button>
+                        <button
+                            onClick={handleImport}
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg py-3 text-sm transition-colors"
+                        >
+                            Importar
+                        </button>
+                    </div>
                 </div>
             )}
 
