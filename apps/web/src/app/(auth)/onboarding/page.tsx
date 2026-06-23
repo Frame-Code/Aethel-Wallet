@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import * as bip39 from 'bip39';
 
-type Step = 'welcome' | 'create' | 'confirm' | 'import';
+type Step = 'welcome' | 'create' | 'import';
 
 const MOCK_SEED = [
     'apple', 'bridge', 'cloud', 'dance',
@@ -31,6 +32,11 @@ export default function OnboardingPage() {
         const allFilled = importWords.every(w => w.trim() !== '');
         if (!allFilled) {
             setError('Debes ingresar las 12 palabras');
+            return;
+        }
+        const mnemonic = importWords.join(' ');
+        if (!bip39.validateMnemonic(mnemonic)) {
+            setError('Frase semilla inválida. Verifica que todas las palabras sean correctas.');
             return;
         }
         setError('');
