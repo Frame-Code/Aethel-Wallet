@@ -118,6 +118,8 @@ export class TransactionsService {
 
   async getTransactionHistory(chain: string, address: string) {
     const strategy = this.strategies[chain];
-    if (!strategy) throw new BadRequestException(`La red ${chain} no está soportada.`);
+    if (!strategy)
+      throw new BadRequestException(`La red ${chain} no está soportada.`);
+     return await strategy.getHistory(address);
   }
 }
