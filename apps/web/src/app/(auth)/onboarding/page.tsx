@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 
 type Step = 'welcome' | 'create' | 'confirm' | 'import';
 
-// Seed phrase de ejemplo — Russell la generará con BIP-39
 const MOCK_SEED = [
     'apple', 'bridge', 'cloud', 'dance',
     'eagle', 'forest', 'green', 'house',
@@ -15,8 +14,9 @@ const MOCK_SEED = [
 export default function OnboardingPage() {
     const [step, setStep] = useState<Step>('welcome');
     const [confirmed, setConfirmed] = useState(false);
-    const [importPhrase, setImportPhrase] = useState('');
     const [error, setError] = useState('');
+    const [copied, setCopied] = useState(false);
+    const [importWords, setImportWords] = useState<string[]>(Array(12).fill(''));
     const router = useRouter();
 
     const handleConfirm = () => {
@@ -27,16 +27,14 @@ export default function OnboardingPage() {
         router.push('/dashboard');
     };
 
-    const [importWords, setImportWords] = useState<string[]>(Array(12).fill(''));
-
     const handleImport = () => {
         const allFilled = importWords.every(w => w.trim() !== '');
         if (!allFilled) {
             setError('Debes ingresar las 12 palabras');
             return;
         }
-        // TODO: importar wallet con Russell usando importWords.join(' ')
-        router.push('/dashboard');
+        setError('');
+        router.push('/create-password');
     };
 
     return (
@@ -87,6 +85,32 @@ export default function OnboardingPage() {
                         ))}
                     </div>
 
+                    <button
+                        onClick={() => {
+                            navigator.clipboard.writeText(MOCK_SEED.join(' '));
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
+                        }}
+                        className="w-full flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-slate-300 hover:text-white rounded-lg py-2.5 text-sm transition-colors"
+                    >
+                        {copied ? (
+                            <>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                Copiado
+                            </>
+                        ) : (
+                            <>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                                Copiar frase semilla
+                            </>
+                        )}
+                    </button>
+
                     <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-4 py-3">
                         <p className="text-yellow-400 text-xs">⚠️ Guarda esta frase en un lugar seguro. Si la pierdes, no podrás recuperar tu wallet.</p>
                     </div>
@@ -134,6 +158,30 @@ export default function OnboardingPage() {
                         <h2 className="text-xl font-semibold text-white">Importar wallet</h2>
                         <p className="text-gray-400 text-sm mt-1">Ingresa tus 12 palabras en orden.</p>
                     </div>
+
+                    <button
+                        onClick={async () => {
+                            try {
+                                const text = await navigator.clipboard.readText();
+                                const words = text.trim().split(/\s+/);
+                                if (words.length === 12) {
+                                    setImportWords(words);
+                                    setError('');
+                                } else {
+                                    setError('La frase pegada no tiene exactamente 12 palabras');
+                                }
+                            } catch {
+                                setError('No se pudo acceder al portapapeles');
+                            }
+                        }}
+                        className="w-full flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-slate-300 hover:text-white rounded-lg py-2.5 text-sm transition-colors"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                        </svg>
+                        Pegar frase semilla
+                    </button>
 
                     <div className="bg-gray-800 rounded-xl p-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {Array.from({ length: 12 }, (_, i) => (
