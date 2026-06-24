@@ -8,9 +8,9 @@ export class SaveAddressesDto {
   solana?: string;
 
   @IsOptional()
-  @Matches(/^(1[a-km-zA-HJ-NP-Z1-9]{25,34}|3[a-km-zA-HJ-NP-Z1-9]{25,34}|bc1[a-z0-9]{25,90})$/, {
-    message: 'Dirección de Bitcoin inválida',
-  })
+  @Matches(/^(1[a-km-zA-HJ-NP-Z1-9]{25,34}|3[a-km-zA-HJ-NP-Z1-9]{25,34}|bc1[a-z0-9]{25,90}|[mn][a-km-zA-HJ-NP-Z1-9]{25,34}|2[a-km-zA-HJ-NP-Z1-9]{25,34}|tb1[a-z0-9]{25,90})$/,
+    { message: 'Dirección de Bitcoin inválida' },
+  )
   bitcoin?: string;
 
   @IsOptional()
