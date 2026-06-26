@@ -64,6 +64,11 @@ export function loginDemo(email: string, password: string) {
         username: user?.username || demoUser.username,
       })
     );
+
+    // Marcar sesión demo como autenticada para el layout de wallet.
+    localStorage.setItem('access_token', 'demo-access-token');
+    localStorage.setItem('refresh_token', 'demo-refresh-token');
+    sessionStorage.setItem('user_pin', '000000');
   }
 
   return {
@@ -87,6 +92,9 @@ export function registerDemo(username: string, email: string, password: string) 
       SESSION_KEY,
       JSON.stringify({ email, username })
     );
+    localStorage.setItem('access_token', 'demo-access-token');
+    localStorage.setItem('refresh_token', 'demo-refresh-token');
+    sessionStorage.setItem('user_pin', '000000');
   }
 
   return { ok: true, user: newUser };
