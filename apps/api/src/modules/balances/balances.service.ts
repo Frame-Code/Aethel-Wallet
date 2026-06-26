@@ -3,6 +3,13 @@ import axios from 'axios';
 
 type Chain = 'solana' | 'bnb' | 'bitcoin';
 
+type BalanceResponse = {
+  address: string;
+  chain: Chain;
+  balance: number;
+  symbol: string;
+};
+
 @Injectable()
 export class BalancesService {
   private readonly logger = new Logger(BalancesService.name);
@@ -11,16 +18,13 @@ export class BalancesService {
     const resolvedChain = this.resolveChain(address, chain);
 
     try {
-      switch (resolvedChain) {
-        case 'solana':
-          return this.getSolanaBalance(address);
-        case 'bnb':
-          return this.getBnbBalance(address);
-        case 'bitcoin':
-          return this.getBitcoinBalance(address);
-        default:
-          throw new BadRequestException('Unsupported chain');
-      }
+      const chainHandlers: Record<Chain, (address: string) => Promise<BalanceResponse>> = {
+        solana: (addr) => this.getSolanaBalance(addr),
+        bnb: (addr) => this.getBnbBalance(addr),
+        bitcoin: (addr) => this.getBitcoinBalance(addr),
+      };
+
+      return await chainHandlers[resolvedChain](address);
     } catch (error) {
       this.logger.error(
         `Balance lookup failed for ${resolvedChain} ${address}`,
@@ -42,6 +46,10 @@ export class BalancesService {
       return normalizedChain;
     }
 
+    if (/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/.test(address)) {
+      return 'bitcoin';
+    }
+
     if (address.startsWith('0x') || /^0x[a-fA-F0-9]{40}$/.test(address)) {
       return 'bnb';
     }
@@ -50,14 +58,10 @@ export class BalancesService {
       return 'solana';
     }
 
-    if (/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/.test(address)) {
-      return 'bitcoin';
-    }
-
     throw new BadRequestException('No se pudo inferir la cadena del address');
   }
 
-  private async getSolanaBalance(address: string) {
+  private async getSolanaBalance(address: string): Promise<BalanceResponse> {
     const { data } = await axios.post(
       process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
       {
@@ -80,7 +84,7 @@ export class BalancesService {
     };
   }
 
-  private async getBnbBalance(address: string) {
+  private async getBnbBalance(address: string): Promise<BalanceResponse> {
     const { data } = await axios.post(
       process.env.BNB_RPC_URL || 'https://bsc-dataseed.binance.org/',
       {
@@ -108,7 +112,7 @@ export class BalancesService {
     };
   }
 
-  private async getBitcoinBalance(address: string) {
+  private async getBitcoinBalance(address: string): Promise<BalanceResponse> {
     const { data } = await axios.get(
       `https://api.blockcypher.com/v1/btc/main/addrs/${address}`,
       {

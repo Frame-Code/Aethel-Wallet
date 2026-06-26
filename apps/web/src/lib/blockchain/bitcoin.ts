@@ -19,7 +19,7 @@ export function useBtcBalance(address?: string) {
 
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/v1/balances/${address}?chain=bitcoin`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005'}/v1/balances/${address}?chain=bitcoin`,
           { method: 'GET' },
         );
 

@@ -1,6 +1,12 @@
 import { Module, Global } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
+import {
+  initializeApp,
+  getApps,
+  cert,
+  applicationDefault,
+  App,
+} from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 
@@ -41,7 +47,8 @@ export const FIREBASE_DB = 'FIREBASE_DB';
         }
 
         return initializeApp({
-          projectId: projectId || 'demo-project',
+          credential: applicationDefault(),
+          projectId: projectId || undefined,
         });
       },
     },
