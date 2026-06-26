@@ -1,7 +1,10 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 const NAV_ITEMS = [
     {
@@ -59,14 +62,14 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
     const pathname = usePathname();
+    const router = useRouter();
 
     return (
-        <aside className="fixed left-0 top-0 z-40 flex h-screen w-60 flex-col border-r border-slate-800/80 bg-slate-900/90 backdrop-blur-xl">
-            <div className="flex flex-col items-center border-b border-slate-800/80 px-4 pb-5 pt-8">
-                <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-500 p-3 shadow-lg shadow-violet-900/20">
-                    <img src="/logo.svg" alt="NexS Wallet" className="h-14 w-14 object-contain" />
-                </div>
-                <span className="mt-3 text-center text-sm font-semibold tracking-[0.3em] text-slate-200">NexS WALLET</span>
+        <aside className="fixed left-0 top-0 h-screen w-60 bg-surface-card border-r border-surface-border flex flex-col z-40">
+            {/* Logo */}
+            <div className="px-4 pt-8 pb-4 border-b border-surface-border flex flex-col items-center">
+                <img src="/logo.svg" alt="NexS Wallet" className="w-24 h-24 object-contain" />
+                <span className="text-sm font-semibold tracking-widest text-slate-300 mt-2 text-center w-full">NexS Wallet</span>
             </div>
 
             <nav className="flex-1 space-y-1 px-3 py-4">
@@ -89,12 +92,10 @@ export default function Sidebar() {
                 })}
             </nav>
 
-            <div className="border-t border-slate-800/80 px-5 py-4">
-                <div className="rounded-2xl bg-slate-950/70 p-3">
-                    <p className="text-[11px] uppercase tracking-[0.25em] text-slate-500">Estado</p>
-                    <p className="mt-1 text-sm font-medium text-emerald-400">Conectado</p>
-                </div>
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-surface-border">
+                <p className="text-xs text-slate-500 font-mono">NexS Wallet v0.1</p>
             </div>
-        </aside>
+        </aside >
     );
 }

@@ -2,7 +2,7 @@ import Sidebar from './Sidebar';
 
 export default function WalletLayout({ children }: { children: React.ReactNode }) {
     return (
-        <div className="min-h-screen bg-slate-950">
+        <div className="flex min-h-screen bg-surface">
             <Sidebar />
             <main className="ml-60 flex-1 p-6 lg:p-8">
                 <div className="mx-auto max-w-7xl space-y-6">

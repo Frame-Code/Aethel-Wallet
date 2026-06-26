@@ -3,13 +3,14 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
-import { registerDemo } from '@/lib/auth/demoAuth';
 
 export default function RegisterPage() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -19,12 +20,8 @@ export default function RegisterPage() {
     setError('');
 
     try {
-      const result = registerDemo(username, email, password);
-      if (!result.ok) {
-        setError(result.error || 'Error al crear la cuenta');
-        return;
-      }
-      router.push('/dashboard');
+      // Aquí irá la lógica de registro con Firebase
+      // TODO: lógica de registro con Firebase - a cargo de Russell
     } catch {
       setError('Error al crear la cuenta');
     } finally {
@@ -33,8 +30,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="rounded-3xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl shadow-slate-950/40 backdrop-blur-xl">
-      <h2 className="mb-6 text-2xl font-semibold text-white">Crear cuenta</h2>
+    <div className="bg-gray-900 rounded-2xl p-8 border border-gray-800">
+      <h2 className="text-xl font-semibold text-white mb-6">Crear cuenta</h2>
 
       {error && (
         <div className="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
@@ -80,10 +77,52 @@ export default function RegisterPage() {
           />
         </div>
 
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">PIN de seguridad (6 dígitos)</label>
+          <input
+            type="password"
+            value={pin}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '');
+              if (val.length <= 6) setPin(val);
+            }}
+            placeholder="••••••"
+            inputMode="numeric"
+            maxLength={6}
+            required
+            className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 tracking-widest"
+          />
+          <p className="text-xs text-gray-500 mt-1">Solo números, exactamente 6 dígitos</p>
+        </div>
+
+        <div>
+          <label className="block text-sm text-gray-400 mb-1">Confirmar PIN</label>
+          <input
+            type="password"
+            value={confirmPin}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '');
+              if (val.length <= 6) setConfirmPin(val);
+            }}
+            placeholder="••••••"
+            inputMode="numeric"
+            maxLength={6}
+            required
+            className={`w-full bg-gray-800 border text-white rounded-lg px-4 py-3 text-sm focus:outline-none tracking-widest ${
+              confirmPin.length === 6 && confirmPin !== pin
+                ? 'border-red-500 focus:border-red-500'
+                : 'border-gray-700 focus:border-blue-500'
+            }`}
+          />
+          {confirmPin.length === 6 && confirmPin !== pin && (
+            <p className="text-xs text-red-400 mt-1">Los PINs no coinciden</p>
+          )}
+        </div>
+
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3 text-sm font-medium text-white transition hover:from-violet-500 hover:to-indigo-500 disabled:opacity-50"
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-lg py-3 text-sm transition-colors"
         >
           {loading ? 'Creando cuenta...' : 'Crear cuenta'}
         </button>
