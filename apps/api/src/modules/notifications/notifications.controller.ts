@@ -26,7 +26,12 @@ export class NotificationsController {
       if (event.type === 'TRANSFER') {
         const recipient = event.nativeTransfers?.[0]?.toUserAccount;
         if (recipient) {
-          await this.notificationsService.notifyUser(recipient, event);
+          try {
+            await this.notificationsService.notifyUser(recipient, event);  
+          } catch(err: any) {
+            this.logger.error(`Error procesando evento: ${err.message}`)
+          }
+          
         }
       }
     }
