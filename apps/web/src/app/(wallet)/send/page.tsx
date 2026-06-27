@@ -10,6 +10,25 @@ const CHAINS: { id: Chain; name: string; symbol: string; balance: string; color:
     { id: 'BNB', name: 'BNB Chain', symbol: '⬡', balance: '8.5 BNB', color: '#06b6d4' },
 ];
 
+const FEES: Record<Chain, { network: string; wallet: string }> = {
+    SOL: { network: '0.000005 SOL', wallet: '0.1%' },
+    BTC: { network: '0.0001 BTC', wallet: '0.1%' },
+    BNB: { network: '0.0005 BNB', wallet: '0.1%' },
+};
+
+// Regex de validación por cadena
+const ADDRESS_REGEX: Record<Chain, RegExp> = {
+    SOL: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
+    BTC: /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/,
+    BNB: /^0x[a-fA-F0-9]{40}$/,
+};
+
+const ADDRESS_HINT: Record<Chain, string> = {
+    SOL: 'La dirección Solana debe tener entre 32 y 44 caracteres alfanuméricos',
+    BTC: 'La dirección Bitcoin debe comenzar con bc1, 1 o 3',
+    BNB: 'La dirección BNB debe comenzar con 0x y tener 42 caracteres',
+};
+
 type Step = 'form' | 'confirm';
 
 export default function SendPage() {
@@ -19,12 +38,24 @@ export default function SendPage() {
     const [step, setStep] = useState<Step>('form');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showPinModal, setShowPinModal] = useState(false);
+    const [pin, setPin] = useState('');
+    const [pinError, setPinError] = useState('');
 
     const chain = CHAINS.find(c => c.id === selectedChain)!;
+    const fees = FEES[selectedChain];
+
+    const validateAddress = (addr: string, chainId: Chain): boolean => {
+        return ADDRESS_REGEX[chainId].test(addr.trim());
+    };
 
     const handleContinue = () => {
         if (!address.trim()) {
             setError('Ingresa la dirección destino');
+            return;
+        }
+        if (!validateAddress(address, selectedChain)) {
+            setError(`Dirección inválida. ${ADDRESS_HINT[selectedChain]}`);
             return;
         }
         if (!amount || parseFloat(amount) <= 0) {
@@ -32,6 +63,18 @@ export default function SendPage() {
             return;
         }
         setError('');
+        setShowPinModal(true);
+    };
+
+    const handlePinConfirm = () => {
+        if (pin.length !== 6) {
+            setPinError('El PIN debe tener 6 dígitos');
+            return;
+        }
+        // TODO: verificar PIN con vault de Russell — loadMnemonic(pin)
+        setPinError('');
+        setShowPinModal(false);
+        setPin('');
         setStep('confirm');
     };
 
@@ -65,7 +108,7 @@ export default function SendPage() {
                             {CHAINS.map(c => (
                                 <button
                                     key={c.id}
-                                    onClick={() => { setSelectedChain(c.id); setError(''); }}
+                                    onClick={() => { setSelectedChain(c.id); setError(''); setAddress(''); }}
                                     className={`flex flex-col items-center gap-2 p-3 rounded-xl border text-sm font-medium transition-colors ${
                                         selectedChain === c.id
                                             ? 'border-blue-500 bg-blue-500/10 text-white'
@@ -88,7 +131,7 @@ export default function SendPage() {
                                 type="text"
                                 value={address}
                                 onChange={(e) => { setAddress(e.target.value); setError(''); }}
-                                placeholder="Pega la dirección del receptor"
+                                placeholder={`Dirección ${selectedChain}`}
                                 className="flex-1 bg-slate-900 border border-slate-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500"
                             />
                             <button
@@ -104,6 +147,7 @@ export default function SendPage() {
                                 </svg>
                             </button>
                         </div>
+                        <p className="text-xs text-slate-500 mt-1">{ADDRESS_HINT[selectedChain]}</p>
                     </div>
 
                     {/* Monto */}
@@ -167,6 +211,16 @@ export default function SendPage() {
                             <span className="text-slate-400">Monto</span>
                             <span className="text-white font-medium">{amount} {selectedChain}</span>
                         </div>
+                        <div className="border-t border-slate-700" />
+                        <div className="flex justify-between text-sm">
+                            <span className="text-slate-400">Fee de red</span>
+                            <span className="text-slate-300">{fees.network}</span>
+                        </div>
+                        <div className="border-t border-slate-700" />
+                        <div className="flex justify-between text-sm">
+                            <span className="text-slate-400">Comisión wallet</span>
+                            <span className="text-slate-300">{fees.wallet} del monto</span>
+                        </div>
                     </div>
 
                     <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-4 py-3">
@@ -193,6 +247,59 @@ export default function SendPage() {
                         >
                             {loading ? 'Enviando...' : 'Confirmar envío'}
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal PIN */}
+            {showPinModal && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+                    <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700 w-full max-w-sm space-y-5">
+                        <div>
+                            <h2 className="text-white font-semibold text-lg">Verificar identidad</h2>
+                            <p className="text-slate-400 text-sm mt-1">Ingresa tu PIN para descifrar tu frase semilla y continuar con la transacción.</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm text-slate-400 mb-1">PIN de seguridad</label>
+                            <input
+                                type="password"
+                                value={pin}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, '');
+                                    if (val.length <= 6) setPin(val);
+                                    setPinError('');
+                                }}
+                                placeholder="••••••"
+                                inputMode="numeric"
+                                maxLength={6}
+                                autoFocus
+                                className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 tracking-widest text-center text-xl"
+                            />
+                            {pinError && (
+                                <p className="text-xs text-red-400 mt-1">{pinError}</p>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowPinModal(false);
+                                    setPin('');
+                                    setPinError('');
+                                }}
+                                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg py-3 text-sm transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handlePinConfirm}
+                                disabled={pin.length !== 6}
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-lg py-3 text-sm transition-colors"
+                            >
+                                Confirmar
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

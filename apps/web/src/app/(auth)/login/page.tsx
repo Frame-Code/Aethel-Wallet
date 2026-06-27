@@ -24,10 +24,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
-  
+
   const [loginMode, setLoginMode] = useState<'standard' | 'biometric' | 'google_pin'>('standard');
   const [googleAuthData, setGoogleAuthData] = useState<GoogleAuthData | null>(null);
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
@@ -110,11 +110,14 @@ export default function LoginPage() {
         throw new Error(errData.message || 'Error en la autenticación del servidor');
       }
 
+
       const { access_token, refresh_token, uid } = await res.json();
 
       localStorage.setItem('access_token', access_token);
       if (refresh_token) {
         localStorage.setItem('refresh_token', refresh_token);
+      } if (uid) {
+        localStorage.setItem('uid', uid);
       }
 
       sessionStorage.setItem('user_pin', pin);
@@ -216,6 +219,8 @@ export default function LoginPage() {
       localStorage.setItem('access_token', access_token);
       if (refresh_token) {
         localStorage.setItem('refresh_token', refresh_token);
+      } if (uid) {
+        localStorage.setItem('uid', uid);  
       }
 
       sessionStorage.setItem('user_pin', pin);
@@ -313,7 +318,7 @@ export default function LoginPage() {
       {loginMode === 'google_pin' && googleAuthData && (
         <form onSubmit={handleGooglePinSubmit} className="space-y-4">
           <p className="text-sm text-gray-400 mb-2">
-            {googleAuthData.needsNewPin 
+            {googleAuthData.needsNewPin
               ? 'Por favor, crea un PIN de seguridad de 6 dígitos numéricos para proteger tu monedero.'
               : 'Ingresa tu PIN de seguridad de 6 dígitos para desbloquear tu monedero.'}
           </p>
@@ -351,11 +356,10 @@ export default function LoginPage() {
                 inputMode="numeric"
                 maxLength={6}
                 required
-                className={`w-full bg-gray-800 border text-white rounded-lg px-4 py-3 text-sm focus:outline-none tracking-widest text-center font-mono ${
-                  confirmPin.length === 6 && confirmPin !== pin
-                    ? 'border-red-500 focus:border-red-500'
-                    : 'border-gray-700 focus:border-blue-500'
-                }`}
+                className={`w-full bg-gray-800 border text-white rounded-lg px-4 py-3 text-sm focus:outline-none tracking-widest text-center font-mono ${confirmPin.length === 6 && confirmPin !== pin
+                  ? 'border-red-500 focus:border-red-500'
+                  : 'border-gray-700 focus:border-blue-500'
+                  }`}
               />
               {confirmPin.length === 6 && confirmPin !== pin && (
                 <p className="text-xs text-red-400 mt-1">Los PINs no coinciden</p>
@@ -453,10 +457,10 @@ export default function LoginPage() {
             className="w-full flex items-center justify-center gap-3 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white font-medium rounded-lg py-3 text-sm transition-colors disabled:opacity-50"
           >
             <svg width="18" height="18" viewBox="0 0 48 48">
-              <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.1-4z"/>
-              <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.1 18.9 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
-              <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-2.9-11.3-7.1l-6.5 5C9.6 39.5 16.3 44 24 44z"/>
-              <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.2 5.2C41 35.2 44 30 44 24c0-1.3-.1-2.7-.4-4z"/>
+              <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.1-4z" />
+              <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.1 18.9 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+              <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-2.9-11.3-7.1l-6.5 5C9.6 39.5 16.3 44 24 44z" />
+              <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.2 5.2C41 35.2 44 30 44 24c0-1.3-.1-2.7-.4-4z" />
             </svg>
             Continuar con Google
           </button>
