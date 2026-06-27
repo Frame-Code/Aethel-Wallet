@@ -8,6 +8,7 @@ import { auth } from '@/lib/firebase';
 import { storeMnemonic } from '@/lib/crypto/vault';
 import { generateMnemonic, validateMnemonic, deriveAddresses } from '@/lib/crypto/keygen';
 import { registerBiometric } from '@/lib/auth/webauthn';
+import { useWallet } from '@/contexts/WalletContext';
 
 type CreateStep = 'form' | 'seed' | 'biometric' | 'google-pin';
 type ImportStep = 'form' | 'seed-import' | 'pin' | 'biometric';
@@ -15,6 +16,7 @@ type ImportStep = 'form' | 'seed-import' | 'pin' | 'biometric';
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { unlockWallet } = useWallet();
   const isImport = searchParams.get('mode') === 'import';
 
   const [step, setStep] = useState<string>('form');
@@ -93,9 +95,10 @@ function RegisterForm() {
     setLoading(true);
     setError('');
     try {
-      sessionStorage.setItem('user_pin', pin);
+
       const newMnemonic = generateMnemonic();
       await storeMnemonic(newMnemonic, pin);
+      unlockWallet(newMnemonic);
       setMnemonic(newMnemonic);
       setStep('seed');
     } catch (err: any) {
@@ -165,9 +168,10 @@ function RegisterForm() {
       if (isImport) {
         setStep('seed-import');
       } else {
-        sessionStorage.setItem('user_pin', pin);
+
         const newMnemonic = generateMnemonic();
         await storeMnemonic(newMnemonic, pin);
+        unlockWallet(newMnemonic);
         setMnemonic(newMnemonic);
         setStep('seed');
       }
@@ -207,7 +211,8 @@ function RegisterForm() {
     setError('');
     try {
       await storeMnemonic(mnemonic, pin);
-      sessionStorage.setItem('user_pin', pin);
+
+      unlockWallet(mnemonic);
       await registerBiometric(uid, email);
 
       const addresses = await deriveAddresses(mnemonic);

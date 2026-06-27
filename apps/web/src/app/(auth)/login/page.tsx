@@ -9,11 +9,13 @@ import { hasVault, storeMnemonic, loadMnemonic } from '@/lib/crypto/vault';
 import { generateMnemonic, deriveAddresses } from '@/lib/crypto/keygen';
 import { registerBiometric, verifyBiometric } from '@/lib/auth/webauthn';
 import { isBiometricAvailable } from '@/lib/auth/webauthn.utils';
+import { useWallet } from '@/contexts/WalletContext';
 
 type LoginMode = 'standard' | 'biometric' | 'google_seed' | 'google_pin';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { unlockWallet } = useWallet();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [pin, setPin] = useState('');
@@ -118,11 +120,12 @@ export default function LoginPage() {
         localStorage.setItem('refresh_token', refresh_token);
       }
 
-      sessionStorage.setItem('user_pin', pin);
+
 
       const vaultExists = await hasVault();
       if (vaultExists) {
-        await loadMnemonic(pin);
+        const loadedMnemonic = await loadMnemonic(pin);
+        unlockWallet(loadedMnemonic);
         
         try {
           const bioAvailable = await isBiometricAvailable();
@@ -246,10 +249,11 @@ export default function LoginPage() {
     }
 
     try {
-      sessionStorage.setItem('user_pin', pin);
+
 
       if (isNewGoogleUser) {
         await storeMnemonic(mnemonic, pin);
+        unlockWallet(mnemonic);
         try {
           await registerBiometric(googleUid, googleEmail);
 
@@ -271,7 +275,8 @@ export default function LoginPage() {
         }
         router.push('/dashboard');
       } else {
-        await loadMnemonic(pin);
+        const loadedMnemonic = await loadMnemonic(pin);
+        unlockWallet(loadedMnemonic);
         router.push('/dashboard');
       }
     } catch (err: any) {
