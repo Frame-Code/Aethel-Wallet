@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, solicitarPermisoPush, registrarTokenEnBackend } from '@/lib/firebase';
 import { hasVault, storeMnemonic, loadMnemonic } from '@/lib/crypto/vault';
 import { generateMnemonic } from '@/lib/crypto/keygen';
 import { registerBiometric, verifyBiometric } from '@/lib/auth/webauthn';
@@ -118,6 +118,26 @@ export default function LoginPage() {
       }
 
       sessionStorage.setItem('user_pin', pin);
+      
+      localStorage.setItem('access_token', access_token);
+      if (refresh_token) {
+        localStorage.setItem('refresh_token', refresh_token);
+      }
+
+      sessionStorage.setItem('user_pin', pin);
+
+      // Pide permiso de notificaciones push y registra el token en el
+      // backend. No bloqueamos el login si esto falla — las notificaciones
+      // son un complemento, no deben impedir que el usuario entre a la app.
+      solicitarPermisoPush()
+        .then((token) => {
+          if (token) {
+            registrarTokenEnBackend(token, access_token).catch((err) =>
+              console.error('Error registrando token FCM:', err),
+            );
+          }
+        })
+        .catch((err) => console.error('Error solicitando permiso push:', err));
 
       const vaultExists = await hasVault();
       if (vaultExists) {
@@ -126,6 +146,7 @@ export default function LoginPage() {
       } else {
         router.push('/onboarding');
       }
+
     } catch (err: any) {
       if (err.message && err.message.includes('PIN incorrecto')) {
         setError('PIN de seguridad incorrecto. Inténtalo de nuevo.');
