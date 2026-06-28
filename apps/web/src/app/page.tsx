@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import Link from 'next/link';
 
 const features = [
@@ -59,4 +60,10 @@ export default function Home() {
       </section>
     </main>
   );
+=======
+import { redirect } from 'next/navigation';
+
+export default function Home() {
+  redirect('/onboarding');
+>>>>>>> main
 }
