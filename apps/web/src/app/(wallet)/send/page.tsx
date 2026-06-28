@@ -19,7 +19,7 @@ const FEES: Record<Chain, { network: string; wallet: string }> = {
 // Regex de validación por cadena
 const ADDRESS_REGEX: Record<Chain, RegExp> = {
     SOL: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
-    BTC: /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/,
+    BTC: /^(1[a-km-zA-HJ-NP-Z1-9]{25,34}|3[a-km-zA-HJ-NP-Z1-9]{25,34}|bc1[a-z0-9]{25,90}|[mn][a-km-zA-HJ-NP-Z1-9]{25,34}|2[a-km-zA-HJ-NP-Z1-9]{25,34}|tb1[a-z0-9]{25,90})$/,
     BNB: /^0x[a-fA-F0-9]{40}$/,
 };
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 
 type Chain = 'SOL' | 'BTC' | 'BNB';
 
@@ -110,10 +111,12 @@ export default function ReceivePage() {
                             {address ? (
                                 <>
                                     <div className="bg-white p-4 rounded-2xl">
-                                        <img
-                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${address}`}
-                                            alt="QR Code"
-                                            className="w-44 h-44"
+                                        <QRCodeSVG
+                                            value={address}
+                                            size={180}
+                                            bgColor="#ffffff"
+                                            fgColor="#000000"
+                                            level="M"
                                         />
                                     </div>
                                     <p className="text-slate-400 text-sm">

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import * as bip39 from 'bip39';
+import { useWallet } from '@/contexts/WalletContext';
 
 type Step = 'welcome' | 'create' | 'import';
 
@@ -19,12 +20,14 @@ export default function OnboardingPage() {
     const [copied, setCopied] = useState(false);
     const [importWords, setImportWords] = useState<string[]>(Array(12).fill(''));
     const router = useRouter();
+    const { unlockWallet } = useWallet();
 
     const handleConfirm = () => {
         if (!confirmed) {
             setError('Debes confirmar que anotaste tu frase semilla');
             return;
         }
+        unlockWallet(MOCK_SEED.join(' '));
         router.push('/dashboard');
     };
 
@@ -39,6 +42,7 @@ export default function OnboardingPage() {
             setError('Frase semilla inválida. Verifica que todas las palabras sean correctas.');
             return;
         }
+        unlockWallet(mnemonic);
         setError('');
         router.push('/create-password');
     };
@@ -231,7 +235,6 @@ export default function OnboardingPage() {
                     </div>
                 </div>
             )}
-
         </div>
     );
 }
