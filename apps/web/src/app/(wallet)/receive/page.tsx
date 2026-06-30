@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import QRCode from 'react-qr-code';
 
 type Chain = 'SOL' | 'BTC' | 'BNB';
 
@@ -81,11 +81,10 @@ export default function ReceivePage() {
                             <button
                                 key={c.id}
                                 onClick={() => { setSelectedChain(c.id); setCopied(false); }}
-                                className={`flex flex-col items-center gap-2 p-3 rounded-xl border text-sm font-medium transition-colors ${
-                                    selectedChain === c.id
+                                className={`flex flex-col items-center gap-2 p-3 rounded-xl border text-sm font-medium transition-colors ${selectedChain === c.id
                                         ? 'border-blue-500 bg-blue-500/10 text-white'
                                         : 'border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-500'
-                                }`}
+                                    }`}
                             >
                                 <span className="text-xl" style={{ color: c.color }}>{c.symbol}</span>
                                 <span>{c.id}</span>
@@ -111,12 +110,9 @@ export default function ReceivePage() {
                             {address ? (
                                 <>
                                     <div className="bg-white p-4 rounded-2xl">
-                                        <QRCodeSVG
+                                        <QRCode
                                             value={address}
                                             size={180}
-                                            bgColor="#ffffff"
-                                            fgColor="#000000"
-                                            level="M"
                                         />
                                     </div>
                                     <p className="text-slate-400 text-sm">
