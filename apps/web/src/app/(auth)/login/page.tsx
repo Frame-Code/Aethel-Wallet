@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useNavigate } from '@/hooks/useNavigate';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth, solicitarPermisoPush, registrarTokenEnBackend } from '@/lib/firebase';
 import { hasVault, storeMnemonic, loadMnemonic } from '@/lib/crypto/vault';
@@ -11,10 +12,11 @@ import { registerBiometric, verifyBiometric } from '@/lib/auth/webauthn';
 import { isBiometricAvailable } from '@/lib/auth/webauthn.utils';
 import { useWallet } from '@/contexts/WalletContext';
 
-type LoginMode = 'standard' | 'biometric' | 'google_seed' | 'google_pin';
+type LoginMode = 'standard' | 'biometric' | 'biometric_pin' | 'google_seed' | 'google_pin';
 
 export default function LoginPage() {
   const router = useRouter();
+  const navigate = useNavigate();
   const { unlockWallet } = useWallet();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -77,9 +79,27 @@ export default function LoginPage() {
       const { access_token } = await res.json();
       localStorage.setItem('access_token', access_token);
       sessionStorage.setItem('biometric_auth', 'true');
-      router.push('/dashboard');
+      // Biometría solo renueva el JWT — el vault sigue cifrado con el PIN.
+      // Pedimos el PIN para descifrar el mnemonic antes de ir al dashboard.
+      setLoginMode('biometric_pin');
     } catch (err: any) {
       setError(err.message || 'Error al verificar la biometría');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBiometricPinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const loadedMnemonic = await loadMnemonic(pin);
+      unlockWallet(loadedMnemonic);
+      navigate('/dashboard');
+    } catch {
+      setError('PIN incorrecto');
+      setPin('');
     } finally {
       setLoading(false);
     }
@@ -150,7 +170,7 @@ export default function LoginPage() {
           if (bioAvailable && hasCredId) {
             const verified = await verifyBiometric();
             if (verified) {
-              router.push('/dashboard');
+              navigate('/dashboard');
               return;
             }
           }
@@ -159,9 +179,9 @@ export default function LoginPage() {
           console.error(e);
         }
         
-        router.push('/dashboard');
+        navigate('/dashboard');
       } else {
-        router.push('/onboarding');
+        navigate('/onboarding');
       }
 
     } catch (err: any) {
@@ -293,11 +313,11 @@ export default function LoginPage() {
         } catch (e) {
           console.error(e);
         }
-        router.push('/dashboard');
+        navigate('/dashboard');
       } else {
         const loadedMnemonic = await loadMnemonic(pin);
         unlockWallet(loadedMnemonic);
-        router.push('/dashboard');
+        navigate('/dashboard');
       }
     } catch (err: any) {
       if (err.message && err.message.includes('PIN incorrecto')) {
@@ -319,6 +339,7 @@ export default function LoginPage() {
       <h2 className="text-xl font-semibold text-white mb-6">
         {loginMode === 'biometric' && 'Bienvenido de nuevo'}
         {loginMode === 'google_seed' && 'Tu frase semilla'}
+        {loginMode === 'biometric_pin' && 'Ingresa tu PIN'}
         {loginMode === 'google_pin' && (isNewGoogleUser ? 'Crear PIN' : 'Desbloquear Wallet')}
         {loginMode === 'standard' && 'Iniciar sesión'}
       </h2>
@@ -369,6 +390,47 @@ export default function LoginPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {loginMode === 'biometric_pin' && (
+        <form onSubmit={handleBiometricPinSubmit} className="space-y-4">
+          <p className="text-sm text-gray-400">
+            Biometría verificada. Ingresa tu PIN para desbloquear tu wallet.
+          </p>
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">PIN de seguridad</label>
+            <input
+              type="password"
+              value={pin}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '');
+                if (val.length <= 6) { setPin(val); setError(''); }
+              }}
+              placeholder="••••••"
+              inputMode="numeric"
+              maxLength={6}
+              autoFocus
+              required
+              className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 tracking-widest text-center font-mono"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading || pin.length !== 6}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-lg py-3 text-sm transition-colors"
+          >
+            {loading ? 'Desbloqueando...' : 'Desbloquear'}
+          </button>
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => { setLoginMode('standard'); setPin(''); setError(''); }}
+              className="text-xs text-blue-400 hover:text-blue-300"
+            >
+              Usar email y contraseña
+            </button>
+          </div>
+        </form>
       )}
 
       {loginMode === 'google_seed' && (
