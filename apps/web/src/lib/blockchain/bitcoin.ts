@@ -18,9 +18,13 @@ export function useBtcBalance(address?: string) {
       setError(null);
 
       try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005'}/v1/balances/${address}?chain=bitcoin`,
-          { method: 'GET' },
+          {
+            method: 'GET',
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          },
         );
 
         if (!response.ok) {

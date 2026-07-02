@@ -8,9 +8,9 @@ export async function getSignClient() {
   signClient = await SignClient.init({
     projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '',
     metadata: {
-      name: 'Wallet Aethel',
+      name: 'NexS Wallet',
       description: 'Wallet no-custodial multicadena',
-      url: 'https://wallet-aethel.vercel.app',
+      url: process.env.NEXT_PUBLIC_APP_URL || 'https://nexs-wallet.vercel.app',
       icons: ['/logo.png'],
     },
   });

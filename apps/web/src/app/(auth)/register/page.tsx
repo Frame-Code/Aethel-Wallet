@@ -3,12 +3,8 @@
 import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  signInWithEmailAndPassword,
-  GoogleAuthProvider,
-  signInWithPopup,
-  getAdditionalUserInfo,
-} from 'firebase/auth';
+import { useNavigate } from '@/hooks/useNavigate';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { storeMnemonic } from '@/lib/crypto/vault';
 import { generateMnemonic, validateMnemonic, deriveAddresses } from '@/lib/crypto/keygen';
@@ -19,6 +15,7 @@ type RegisterStep = 'form' | 'seed' | 'seed-import' | 'google-pin' | 'pin';
 
 function RegisterForm() {
   const router = useRouter();
+  const navigate = useNavigate();
   const searchParams = useSearchParams();
   const { unlockWallet } = useWallet();
   const isImport = searchParams.get('mode') === 'import';
@@ -67,8 +64,8 @@ function RegisterForm() {
       const { access_token, refresh_token, uid: userId } = await loginRes.json();
       localStorage.setItem('access_token', access_token);
       if (refresh_token) localStorage.setItem('refresh_token', refresh_token);
-
-      setUid(userId);
+      
+      setUid( userId);
       setEmail(user.email || '');
       setStep(isImport ? 'seed-import' : 'google-pin');
     } catch (err: any) {
@@ -224,7 +221,7 @@ function RegisterForm() {
         }).catch((err) => console.error('Error al guardar direcciones:', err));
       }
 
-      router.push('/dashboard');
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Error al guardar');
     } finally {
@@ -255,10 +252,10 @@ function RegisterForm() {
         }).catch((err) => console.error('Error al guardar direcciones:', err));
       }
 
-      router.push('/dashboard');
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Error al registrar biométrico');
-      router.push('/dashboard');
+      navigate('/dashboard');
     } finally {
       setLoading(false);
     }

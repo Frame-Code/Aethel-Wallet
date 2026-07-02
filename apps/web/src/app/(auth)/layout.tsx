@@ -6,6 +6,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <h1 className="text-3xl font-bold text-white">NexS Wallet</h1>
           <p className="text-gray-400 mt-1">Tu billetera multichain</p>
         </div>
+        {children}
       </div>
     </div>
   );

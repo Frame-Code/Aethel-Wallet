@@ -9,6 +9,8 @@ import { WalletModule } from './modules/wallet/wallet.module';
 import { WebhookMiddleware } from './common/middlewares/webhook.middleware';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
+import { BalancesModule } from './modules/balances/balances.module';
+import { PricesModule } from './modules/prices/prices.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
     FirebaseModule,
     AuthModule,
     UsersModule,
+    BalancesModule,
+    PricesModule,
     WalletModule,
     NotificationsModule,
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 30 }]),

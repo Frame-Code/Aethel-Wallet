@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useNavigate } from '@/hooks/useNavigate';
 import { loadMnemonic } from '@/lib/crypto/vault';
 import { useWallet } from '@/contexts/WalletContext';
 
@@ -10,6 +11,7 @@ export default function UnlockPage() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const navigate = useNavigate();
     const { unlockWallet } = useWallet();
 
     const handleUnlock = async (e: React.FormEvent) => {
@@ -20,7 +22,7 @@ export default function UnlockPage() {
         try {
             const mnemonic = await loadMnemonic(pin);
             unlockWallet(mnemonic);
-            router.push('/dashboard');
+            navigate('/dashboard');
         } catch {
             setError('PIN incorrecto');
             setPin('');

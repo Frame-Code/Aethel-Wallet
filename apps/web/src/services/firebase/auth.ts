@@ -263,6 +263,7 @@ export async function logoutFirebase(): Promise<void> {
     // 2. Limpiar almacenamiento local y de sesión
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
-
+    localStorage.removeItem('uid');
+    
   }
 }

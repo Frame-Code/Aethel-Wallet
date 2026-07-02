@@ -20,8 +20,6 @@ async function bootstrap() {
     },
   }));
 
-  app.setGlobalPrefix('v1');
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,          
