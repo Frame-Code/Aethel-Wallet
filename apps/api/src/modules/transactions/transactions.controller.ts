@@ -26,4 +26,9 @@ export class TransactionsController {
       address
     );
   }
+
+  @Get('bitcoin/:address/utxos')
+  async getBitcoinUtxos(@Param('address') address: string) {
+    return await this.transactionsService.getBitcoinUtxos(address);
+  }
 }

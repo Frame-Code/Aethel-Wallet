@@ -32,18 +32,34 @@ class BnbStrategy implements IChainStrategy {
   }
 
   async getHistory(address: string) {
-    // BscScan permite consultas sin API Key con límite (1 req/sec)
-    const apiKey = process.env.BSCSCAN_API_KEY || ''; 
-    const url = `https://api.bscscan.com/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=20&sort=desc&apikey=${apiKey}`;
-    
     try {
-      const response = await fetch(url);
+      const response = await fetch(process.env.ALCHEMY_BNB_URL!, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'alchemy_getAssetTransfers',
+          params: [{
+            fromAddress: address,
+            category: ['external', 'internal', 'erc20'],
+            order: 'desc',
+            maxCount: '0x14',
+            withMetadata: true,
+          }],
+        }),
+      });
+
       const data: any = await response.json();
-      
-      return { 
-        address, 
-        chain: 'bnb', 
-        transactions: data.status === '1' ? data.result : [] 
+
+      if (data.error) {
+        throw new Error(data.error.message);
+      }
+
+      return {
+        address,
+        chain: 'bnb',
+        transactions: data.result?.transfers ?? [],
       };
     } catch (error: any) {
       throw new Error(`Error al obtener historial de BNB: ${error.message}`);
@@ -54,24 +70,23 @@ class BnbStrategy implements IChainStrategy {
 class BitcoinStrategy implements IChainStrategy {
   async broadcast(rawTx: string): Promise<string> {
     try {
-      // Implementación usando tu variable ALCHEMY_BTC_URL
       const response = await fetch(process.env.ALCHEMY_BTC_URL!, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          jsonrpc: '1.0',
-          id: 'wallet_broadcast',
+          jsonrpc: '2.0',
+          id: 1,
           method: 'sendrawtransaction',
           params: [rawTx]
         })
       });
-      
+
       const data: any = await response.json();
-      
+
       if (data.error) {
         throw new Error(data.error.message);
       }
-      return data.result; 
+      return data.result;
     } catch (error: any) {
       throw new Error(`Error en broadcast de Bitcoin: ${error.message}`);
     }
@@ -79,21 +94,28 @@ class BitcoinStrategy implements IChainStrategy {
 
   async getHistory(address: string) {
     const url = `https://mempool.space/api/address/${address}/txs`;
-    
+
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error('Network response was not ok');
-      
+
       const transactions = await response.json();
-      
-      return { 
-        address, 
-        chain: 'bitcoin', 
-        transactions: transactions 
+
+      return {
+        address,
+        chain: 'bitcoin',
+        transactions: transactions
       };
     } catch (error: any) {
       throw new Error(`Error al obtener historial de Bitcoin: ${error.message}`);
     }
+  }
+
+  async getUtxos(address: string): Promise<any[]> {
+    const url = `https://mempool.space/api/address/${address}/utxo`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`mempool.space error: ${response.status}`);
+    return response.json() as Promise<any[]>;
   }
 }
 
@@ -120,6 +142,11 @@ export class TransactionsService {
     const strategy = this.strategies[chain];
     if (!strategy)
       throw new BadRequestException(`La red ${chain} no está soportada.`);
-     return await strategy.getHistory(address);
+    return await strategy.getHistory(address);
+  }
+
+  async getBitcoinUtxos(address: string) {
+    const bitcoin = this.strategies['bitcoin'] as BitcoinStrategy;
+    return bitcoin.getUtxos(address);
   }
 }
