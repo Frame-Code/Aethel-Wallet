@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useNavigate } from '@/hooks/useNavigate';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth, solicitarPermisoPush, registrarTokenEnBackend } from '@/lib/firebase';
 import { hasVault, storeMnemonic, loadMnemonic } from '@/lib/crypto/vault';
@@ -11,15 +12,17 @@ import { registerBiometric, verifyBiometric } from '@/lib/auth/webauthn';
 import { isBiometricAvailable } from '@/lib/auth/webauthn.utils';
 import { useWallet } from '@/contexts/WalletContext';
 
-type LoginMode = 'standard' | 'biometric' | 'google_seed' | 'google_pin';
+type LoginMode = 'standard' | 'biometric' | 'biometric_pin' | 'google_seed' | 'google_pin';
 
 export default function LoginPage() {
   const router = useRouter();
+  const navigate = useNavigate();
   const { unlockWallet } = useWallet();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
+
   const [mnemonic, setMnemonic] = useState('');
   const [confirmed, setConfirmed] = useState(false);
 
@@ -76,9 +79,27 @@ export default function LoginPage() {
       const { access_token } = await res.json();
       localStorage.setItem('access_token', access_token);
       sessionStorage.setItem('biometric_auth', 'true');
-      router.push('/dashboard');
+      // Biometría solo renueva el JWT — el vault sigue cifrado con el PIN.
+      // Pedimos el PIN para descifrar el mnemonic antes de ir al dashboard.
+      setLoginMode('biometric_pin');
     } catch (err: any) {
       setError(err.message || 'Error al verificar la biometría');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBiometricPinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const loadedMnemonic = await loadMnemonic(pin);
+      unlockWallet(loadedMnemonic);
+      navigate('/dashboard');
+    } catch {
+      setError('PIN incorrecto');
+      setPin('');
     } finally {
       setLoading(false);
     }
@@ -113,11 +134,14 @@ export default function LoginPage() {
         throw new Error(errData.message || 'Error en la autenticación del servidor');
       }
 
+
       const { access_token, refresh_token, uid } = await res.json();
 
       localStorage.setItem('access_token', access_token);
       if (refresh_token) {
         localStorage.setItem('refresh_token', refresh_token);
+      } if (uid) {
+        localStorage.setItem('uid', uid);
       }
 
       sessionStorage.setItem('user_pin', pin);
@@ -146,7 +170,7 @@ export default function LoginPage() {
           if (bioAvailable && hasCredId) {
             const verified = await verifyBiometric();
             if (verified) {
-              router.push('/dashboard');
+              navigate('/dashboard');
               return;
             }
           }
@@ -155,9 +179,9 @@ export default function LoginPage() {
           console.error(e);
         }
         
-        router.push('/dashboard');
+        navigate('/dashboard');
       } else {
-        router.push('/onboarding');
+        navigate('/onboarding');
       }
 
     } catch (err: any) {
@@ -185,7 +209,6 @@ export default function LoginPage() {
       }
 
       const idToken = await user.getIdToken();
-      const vaultExists = await hasVault();
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/v1';
       const res = await fetch(`${apiUrl}/auth/login`, {
@@ -199,21 +222,32 @@ export default function LoginPage() {
         throw new Error(errData.message || 'Error en la autenticación del servidor');
       }
 
-      const { access_token, refresh_token, uid } = await res.json();
+      const { access_token, refresh_token, uid, isNewUser } = await res.json();
 
       localStorage.setItem('access_token', access_token);
+      localStorage.setItem('uid', uid);
       if (refresh_token) localStorage.setItem('refresh_token', refresh_token);
 
       setGoogleUid(uid);
       setGoogleEmail(user.email);
 
-      if (!vaultExists) {
+      // Usar isNewUser del backend (basado en Firestore) 
+      if (isNewUser) {
         setIsNewGoogleUser(true);
         const newMnemonic = generateMnemonic();
         setMnemonic(newMnemonic);
         setLoginMode('google_seed');
       } else {
+        // Usuario Google existente — verificar si tiene vault en este dispositivo
         setIsNewGoogleUser(false);
+        const vaultExists = await hasVault();
+
+        if (!vaultExists) {
+          // Dispositivo nuevo o reinstalación — debe restaurar su seed
+          navigate('/onboarding');
+          return;
+        }
+
         const bioAvailable = await isBiometricAvailable();
         const hasCredId = !!localStorage.getItem('biometric_cred_id');
 
@@ -287,11 +321,11 @@ export default function LoginPage() {
         } catch (e) {
           console.error(e);
         }
-        router.push('/dashboard');
+        navigate('/dashboard');
       } else {
         const loadedMnemonic = await loadMnemonic(pin);
         unlockWallet(loadedMnemonic);
-        router.push('/dashboard');
+        navigate('/dashboard');
       }
     } catch (err: any) {
       if (err.message && err.message.includes('PIN incorrecto')) {
@@ -313,6 +347,7 @@ export default function LoginPage() {
       <h2 className="text-xl font-semibold text-white mb-6">
         {loginMode === 'biometric' && 'Bienvenido de nuevo'}
         {loginMode === 'google_seed' && 'Tu frase semilla'}
+        {loginMode === 'biometric_pin' && 'Ingresa tu PIN'}
         {loginMode === 'google_pin' && (isNewGoogleUser ? 'Crear PIN' : 'Desbloquear Wallet')}
         {loginMode === 'standard' && 'Iniciar sesión'}
       </h2>
@@ -365,6 +400,47 @@ export default function LoginPage() {
         </div>
       )}
 
+      {loginMode === 'biometric_pin' && (
+        <form onSubmit={handleBiometricPinSubmit} className="space-y-4">
+          <p className="text-sm text-gray-400">
+            Biometría verificada. Ingresa tu PIN para desbloquear tu wallet.
+          </p>
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">PIN de seguridad</label>
+            <input
+              type="password"
+              value={pin}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '');
+                if (val.length <= 6) { setPin(val); setError(''); }
+              }}
+              placeholder="••••••"
+              inputMode="numeric"
+              maxLength={6}
+              autoFocus
+              required
+              className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-blue-500 tracking-widest text-center font-mono"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading || pin.length !== 6}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-lg py-3 text-sm transition-colors"
+          >
+            {loading ? 'Desbloqueando...' : 'Desbloquear'}
+          </button>
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => { setLoginMode('standard'); setPin(''); setError(''); }}
+              className="text-xs text-blue-400 hover:text-blue-300"
+            >
+              Usar email y contraseña
+            </button>
+          </div>
+        </form>
+      )}
+
       {loginMode === 'google_seed' && (
         <div className="space-y-6">
           <p className="text-gray-400 text-sm">Anota estas 12 palabras en orden. No la compartas con nadie.</p>
@@ -407,6 +483,7 @@ export default function LoginPage() {
       {loginMode === 'google_pin' && (
         <form onSubmit={handleGooglePinSubmit} className="space-y-4">
           <p className="text-sm text-gray-400 mb-2">
+
             {isNewGoogleUser
               ? 'Crea un PIN de seguridad de 6 dígitos para proteger tu wallet.'
               : 'Ingresa tu PIN de seguridad para desbloquear tu wallet.'}
@@ -445,11 +522,10 @@ export default function LoginPage() {
                 inputMode="numeric"
                 maxLength={6}
                 required
-                className={`w-full bg-gray-800 border text-white rounded-lg px-4 py-3 text-sm focus:outline-none tracking-widest text-center font-mono ${
-                  confirmPin.length === 6 && confirmPin !== pin
-                    ? 'border-red-500 focus:border-red-500'
-                    : 'border-gray-700 focus:border-blue-500'
-                }`}
+                className={`w-full bg-gray-800 border text-white rounded-lg px-4 py-3 text-sm focus:outline-none tracking-widest text-center font-mono ${confirmPin.length === 6 && confirmPin !== pin
+                  ? 'border-red-500 focus:border-red-500'
+                  : 'border-gray-700 focus:border-blue-500'
+                  }`}
               />
               {confirmPin.length === 6 && confirmPin !== pin && (
                 <p className="text-xs text-red-400 mt-1">Los PINs no coinciden</p>
@@ -548,10 +624,10 @@ export default function LoginPage() {
             className="w-full flex items-center justify-center gap-3 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white font-medium rounded-lg py-3 text-sm transition-colors disabled:opacity-50"
           >
             <svg width="18" height="18" viewBox="0 0 48 48">
-              <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.1-4z"/>
-              <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.1 18.9 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
-              <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-2.9-11.3-7.1l-6.5 5C9.6 39.5 16.3 44 24 44z"/>
-              <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.2 5.2C41 35.2 44 30 44 24c0-1.3-.1-2.7-.4-4z"/>
+              <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.1-4z" />
+              <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.1 18.9 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+              <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.5 26.8 36 24 36c-5.2 0-9.6-2.9-11.3-7.1l-6.5 5C9.6 39.5 16.3 44 24 44z" />
+              <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.2 5.2C41 35.2 44 30 44 24c0-1.3-.1-2.7-.4-4z" />
             </svg>
             Continuar con Google
           </button>
