@@ -209,7 +209,6 @@ export default function LoginPage() {
       }
 
       const idToken = await user.getIdToken();
-      const vaultExists = await hasVault();
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/v1';
       const res = await fetch(`${apiUrl}/auth/login`, {
@@ -223,22 +222,32 @@ export default function LoginPage() {
         throw new Error(errData.message || 'Error en la autenticación del servidor');
       }
 
-      const { access_token, refresh_token, uid } = await res.json();
+      const { access_token, refresh_token, uid, isNewUser } = await res.json();
 
       localStorage.setItem('access_token', access_token);
-
+      localStorage.setItem('uid', uid);
       if (refresh_token) localStorage.setItem('refresh_token', refresh_token);
 
       setGoogleUid(uid);
       setGoogleEmail(user.email);
 
-      if (!vaultExists) {
+      // Usar isNewUser del backend (basado en Firestore) 
+      if (isNewUser) {
         setIsNewGoogleUser(true);
         const newMnemonic = generateMnemonic();
         setMnemonic(newMnemonic);
         setLoginMode('google_seed');
       } else {
+        // Usuario Google existente — verificar si tiene vault en este dispositivo
         setIsNewGoogleUser(false);
+        const vaultExists = await hasVault();
+
+        if (!vaultExists) {
+          // Dispositivo nuevo o reinstalación — debe restaurar su seed
+          navigate('/onboarding');
+          return;
+        }
+
         const bioAvailable = await isBiometricAvailable();
         const hasCredId = !!localStorage.getItem('biometric_cred_id');
 
@@ -251,7 +260,6 @@ export default function LoginPage() {
         } else {
           setLoginMode('google_pin');
         }
-
       }
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión con Google');

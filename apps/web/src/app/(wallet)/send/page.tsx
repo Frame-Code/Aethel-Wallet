@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { loadMnemonic } from '@/lib/crypto/vault';
+import { useWallet } from '@/contexts/WalletContext';
 
 type Chain = 'SOL' | 'BTC' | 'BNB';
 
@@ -41,7 +43,9 @@ export default function SendPage() {
     const [showPinModal, setShowPinModal] = useState(false);
     const [pin, setPin] = useState('');
     const [pinError, setPinError] = useState('');
+    const [pinLoading, setPinLoading] = useState(false);
 
+    const { unlockWallet } = useWallet();
     const chain = CHAINS.find(c => c.id === selectedChain)!;
     const fees = FEES[selectedChain];
 
@@ -66,16 +70,25 @@ export default function SendPage() {
         setShowPinModal(true);
     };
 
-    const handlePinConfirm = () => {
+    const handlePinConfirm = async () => {
         if (pin.length !== 6) {
             setPinError('El PIN debe tener 6 dígitos');
             return;
         }
-        // TODO: verificar PIN con vault de Russell — loadMnemonic(pin)
-        setPinError('');
-        setShowPinModal(false);
-        setPin('');
-        setStep('confirm');
+        setPinLoading(true);
+        try {
+            const mnemonic = await loadMnemonic(pin);
+            unlockWallet(mnemonic);
+            setPinError('');
+            setShowPinModal(false);
+            setPin('');
+            setStep('confirm');
+        } catch {
+            setPinError('PIN incorrecto');
+            setPin('');
+        } finally {
+            setPinLoading(false);
+        }
     };
 
     const handleSend = async () => {
@@ -294,10 +307,10 @@ export default function SendPage() {
                             </button>
                             <button
                                 onClick={handlePinConfirm}
-                                disabled={pin.length !== 6}
+                                disabled={pin.length !== 6 || pinLoading}
                                 className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium rounded-lg py-3 text-sm transition-colors"
                             >
-                                Confirmar
+                                {pinLoading ? 'Verificando...' : 'Confirmar'}
                             </button>
                         </div>
                     </div>

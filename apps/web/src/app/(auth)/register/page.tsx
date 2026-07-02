@@ -70,7 +70,7 @@ function RegisterForm() {
       localStorage.setItem('access_token', access_token);
       if (refresh_token) localStorage.setItem('refresh_token', refresh_token);
       
-      setUid(userId);
+      setUid( userId);
       setEmail(user.email || '');
 
       if (isImport) {

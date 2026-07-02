@@ -28,24 +28,38 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto): Promise<{ message: string }> {
+    let uid: string | null = null;
+    
     try {
       const userRecord = await this.firebaseAuth.createUser({
         email: dto.email,
         password: dto.password,
         displayName: dto.username,
       });
+      uid = userRecord.uid;
 
-      await this.firestore.collection('users').doc(userRecord.uid).set({
-        uid: userRecord.uid,
+      await this.firestore.collection('users').doc(uid).set({
+        uid,
         email: dto.email,
         username: dto.username,
+        walletCreado: false,
         createdAt: FieldValue.serverTimestamp(),
       });
 
-      this.logger.log(`Usuario registrado: ${userRecord.uid}`);
+      this.logger.log(`Usuario registrado: ${uid}`);
       return { message: 'Usuario registrado exitosamente' };
 
     } catch (error: any) {
+      // Si Firestore falló pero Firebase Auth ya creó al usuario, hacer rollback
+      if (uid && error.code !== 'auth/email-already-exists') {
+        try {
+          await this.firebaseAuth.deleteUser(uid);
+          this.logger.warn(`Rollback: usuario ${uid} eliminado de Firebase Auth tras fallo en Firestore`);
+        } catch (rollbackError) {
+          this.logger.error(`Rollback fallido para uid ${uid}`, rollbackError);
+        }
+      }
+
       if (error.code === 'auth/email-already-exists') {
         throw new ConflictException('El email ya está registrado');
       }
@@ -58,6 +72,7 @@ export class AuthService {
     access_token: string;
     refresh_token: string;
     uid: string;
+    isNewUser: boolean;
   }> {
     let decodedToken: DecodedIdToken;
     try {
@@ -66,20 +81,46 @@ export class AuthService {
       throw new UnauthorizedException('idToken inválido o expirado');
     }
 
-    const { uid, email } = decodedToken;
+    const { uid, email, name, firebase } = decodedToken;
+    const isGoogleLogin = firebase?.sign_in_provider === 'google.com';
+
+    // Verificar si el documento del usuario existe en Firestore
+    const userRef = this.firestore.collection('users').doc(uid);
+    const userDoc = await userRef.get();
+    let isNewUser = false;
+
+    if (!userDoc.exists) {
+      // Usuario nuevo vía Google — crear documento en Firestore
+      if (isGoogleLogin) {
+        await userRef.set({
+          uid,
+          email: email ?? '',
+          username: name ?? email?.split('@')[0] ?? uid,
+          walletCreado: false,
+          createdAt: FieldValue.serverTimestamp(),
+        });
+        isNewUser = true;
+        this.logger.log(`Documento Firestore creado para usuario Google: ${uid}`);
+      } else {
+        // Usuario email/password sin documento — registro incompleto
+        this.logger.warn(`Login sin documento Firestore para uid: ${uid}`);
+      }
+    }
 
     const payload = { sub: uid, email };
     const access_token = this.jwtService.sign(payload);
-
-    const refresh_token = this.jwtService.sign({ sub: uid, email: email as string }, { secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'), expiresIn: 2592000 });
+    const refresh_token = this.jwtService.sign(
+      { sub: uid, email: email as string },
+      { secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'), expiresIn: 2592000 },
+    );
 
     await this.firestore.collection('refreshTokens').doc(uid).set({
       token: refresh_token,
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    this.logger.log(`Login exitoso: ${uid}`);
-    return { access_token, refresh_token, uid };
+    this.logger.log(`Login exitoso: ${uid} | isNewUser: ${isNewUser}`);
+    return { access_token, refresh_token, uid, isNewUser };
   }
 
   // ── REFRESH ───────────────────────────────────────────────────────
