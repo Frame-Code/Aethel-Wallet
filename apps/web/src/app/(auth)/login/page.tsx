@@ -77,6 +77,8 @@ export default function LoginPage() {
       const { access_token } = await res.json();
       localStorage.setItem('access_token', access_token);
       sessionStorage.setItem('biometric_auth', 'true');
+      // Biometría solo renueva el JWT — el vault sigue cifrado con el PIN.
+      // Pedimos el PIN para descifrar el mnemonic antes de ir al dashboard.
       setLoginMode('biometric_pin');
     } catch (err: any) {
       setError(err.message || 'Error al verificar la biometría');

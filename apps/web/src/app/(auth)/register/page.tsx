@@ -64,8 +64,9 @@ function RegisterForm() {
       const { access_token, refresh_token, uid: userId } = await loginRes.json();
       localStorage.setItem('access_token', access_token);
       if (refresh_token) localStorage.setItem('refresh_token', refresh_token);
-      
-      setUid( userId);
+      if (userId) localStorage.setItem('uid', userId);
+
+      setUid(userId);
       setEmail(user.email || '');
       setStep(isImport ? 'seed-import' : 'google-pin');
     } catch (err: any) {
@@ -153,6 +154,7 @@ function RegisterForm() {
       const { access_token, refresh_token, uid: userId } = await loginRes.json();
       localStorage.setItem('access_token', access_token);
       if (refresh_token) localStorage.setItem('refresh_token', refresh_token);
+      if (userId) localStorage.setItem('uid', userId);
 
       setUid(userId);
       if (isImport) {
@@ -264,25 +266,7 @@ function RegisterForm() {
   const seedWords = mnemonic ? mnemonic.split(' ') : [];
 
   return (
-    <div className="min-h-screen bg-slate-950 px-4 py-10 text-slate-100 sm:px-6 lg:px-8">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6 lg:flex-row lg:items-center">
-        <div className="flex-1 rounded-3xl border border-slate-800 bg-slate-900/70 p-8 shadow-2xl shadow-violet-950/20 backdrop-blur">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-500">
-              <img src="/logo.svg" alt="NexS Wallet" className="h-7 w-7" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-violet-300">NexS Wallet</p>
-              <h1 className="text-2xl font-semibold text-white">Crea tu wallet</h1>
-            </div>
-          </div>
-
-          <p className="mt-6 text-sm leading-6 text-slate-400">
-            Protege tus activos con una experiencia simple, segura y lista para usar desde cualquier dispositivo.
-          </p>
-        </div>
-
-        <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-violet-950/20 sm:p-8">
+    <div className="bg-gray-900 rounded-2xl p-6 sm:p-8 border border-gray-800 w-full">
           {step === 'form' && (
             <>
               <h2 className="text-xl font-semibold text-white">Crear cuenta</h2>
@@ -301,7 +285,7 @@ function RegisterForm() {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="tunombre"
+                    placeholder="tu nombre"
                     required
                     className="w-full rounded-2xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-violet-500"
                   />
@@ -644,8 +628,6 @@ function RegisterForm() {
               </button>
             </div>
           )}
-        </div>
-      </div>
     </div>
   );
 }
