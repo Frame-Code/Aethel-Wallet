@@ -79,21 +79,28 @@ class BitcoinStrategy implements IChainStrategy {
 
   async getHistory(address: string) {
     const url = `https://mempool.space/api/address/${address}/txs`;
-    
+
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error('Network response was not ok');
-      
+
       const transactions = await response.json();
-      
-      return { 
-        address, 
-        chain: 'bitcoin', 
-        transactions: transactions 
+
+      return {
+        address,
+        chain: 'bitcoin',
+        transactions: transactions
       };
     } catch (error: any) {
       throw new Error(`Error al obtener historial de Bitcoin: ${error.message}`);
     }
+  }
+
+  async getUtxos(address: string): Promise<any[]> {
+    const url = `https://mempool.space/api/address/${address}/utxo`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`mempool.space error: ${response.status}`);
+    return response.json() as Promise<any[]>;
   }
 }
 
@@ -120,6 +127,11 @@ export class TransactionsService {
     const strategy = this.strategies[chain];
     if (!strategy)
       throw new BadRequestException(`La red ${chain} no está soportada.`);
-     return await strategy.getHistory(address);
+    return await strategy.getHistory(address);
+  }
+
+  async getBitcoinUtxos(address: string) {
+    const bitcoin = this.strategies['bitcoin'] as BitcoinStrategy;
+    return bitcoin.getUtxos(address);
   }
 }

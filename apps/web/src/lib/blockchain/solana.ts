@@ -20,7 +20,7 @@ export function useSolanaBalance(address?: string) {
       try {
         const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3005'}/v1/balances/${address}?chain=solana`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/balances/${address}?chain=solana`,
           {
             method: 'GET',
             headers: token ? { Authorization: `Bearer ${token}` } : {},

@@ -27,7 +27,7 @@ export class WalletService {
 
     await userRef.update({ ...updates, walletCreado: true });
 
-    return userRef.get().then((doc) => doc.data());
+    return userRef.get().then((doc) => doc.data()?.addresses ?? {});
   }
 
   async getAddresses(uid: string) {
